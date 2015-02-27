@@ -1,0 +1,79 @@
+-module(parse).
+-export([parser/1,rpnMake/3,tryIt/0,evaluate/2]).
+
+tryIt()->
+    io:fwrite("1. ~p~n",[parser("(1*be)")]).
+
+parser(WffString)->
+    TokenList=tokenise(WffString),
+%    TokenList.
+
+    RPNList = rpnMake(TokenList,[],[]),
+%    RPNList.
+
+    Evaluation = evaluate(RPNList, []),
+    Evaluation.
+
+tokenise([])->
+    [];
+tokenise([$+|Tail])->
+    [{binOp,plus}|tokenise(Tail )];
+tokenise([$-|Tail])->
+    [{binOp,minus}|tokenise(Tail)];
+tokenise([$/|Tail])->
+    [{binOp,divide}|tokenise(Tail)];
+tokenise([$*|Tail])->
+    [{binOp,mul}|tokenise(Tail)];
+tokenise([$~|Tail])->
+    [{unOp,uMin}|tokenise(Tail)];
+tokenise([$(|Tail]) ->
+    [{brack,left}|tokenise(Tail)];
+tokenise([$)|Tail]) ->
+    [{brack,right}|tokenise(Tail)];
+tokenise([Head|Tail]) ->
+    [{num,Head-48}|tokenise(Tail)].
+
+rpnMake([],[],Q1) ->
+    Q1;
+%rpnMake([{unOp, uMin}|Tail], [SH|ST], Q1) when (SH =:= uMin) ->
+%   NS = [{unOp}] ++ ST,
+%    NQ = Q1 ++ SH,
+%    rpnMake(Tail,NS,NQ);
+rpnMake([],[Head|Tail],Q1) ->
+    Q2 = Q1 ++ [Head],
+    rpnMake([],Tail,Q2);
+rpnMake([{num,Head}|Tail],S1,Q1) ->
+    rpnMake(Tail,S1,Q1++[{push,Head}]);
+rpnMake([{binOp,Head}|Tail],S1,Q1) ->
+    S2 = [{Head}] ++ S1,
+    rpnMake(Tail,S2,Q1);
+rpnMake([{brack,left}|Tail],S1,Q1) ->
+    S2 = [{push,left}] ++ S1,
+    rpnMake(Tail,S2,Q1);
+rpnMake([{brack,right}|Tail],[SH|ST],Q1) when SH /= {push,left} ->
+    Q2 = Q1 ++ [SH],
+    rpnMake([{brack,right}|Tail],ST,Q2);
+rpnMake([{brack,right}|Tail],[SH|ST],Q1) when SH =:= {push,left} ->
+    rpnMake(Tail,ST,Q1).
+
+evaluate([], Stack) ->
+    Stack;
+%evaluate([{unOp, Head}|Tail1], Stack) ->
+%    Stack2 = ["-"] ++ Tail1,
+%    evaluate(Tail1, Stack2);
+evaluate([{push, Head}|Tail1], Stack) ->
+    Stack2 = [Head] ++ Stack,
+    evaluate(Tail1, Stack2);
+evaluate([{plus}|Tail1], [Head1, Head2|Tail]) ->
+    Stack2 = [(Head2 + Head1)] ++ Tail,
+    evaluate(Tail1, Stack2);
+evaluate([{minus}|Tail1], [Head1, Head2|Tail]) ->
+    Stack2 = [(Head2 - Head1)] ++ Tail,
+    evaluate(Tail1, Stack2);
+evaluate([{divide}|Tail1], [Head1, Head2|Tail]) ->
+    Stack2 = [(Head2 / Head1)] ++ Tail,
+    evaluate(Tail1, Stack2);
+evaluate([{mul}|Tail1], [Head1, Head2|Tail]) ->
+    Stack2 = [(Head2 * Head1)] ++ Tail,
+    evaluate(Tail1, Stack2).
+
